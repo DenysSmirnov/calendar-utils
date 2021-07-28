@@ -63,6 +63,8 @@ export interface CalendarEvent<MetaType = any> {
   };
   draggable?: boolean;
   meta?: MetaType;
+  eventWidth?: number;
+  isDayView?: boolean;
 }
 
 export interface WeekViewAllDayEvent {
@@ -446,6 +448,8 @@ export interface GetWeekViewArgs {
   viewStart?: Date;
   viewEnd?: Date;
   minimumEventHeight?: number;
+  eventWidth?: number;
+  isDayView?: boolean;
 }
 
 export function getDifferenceInDaysWithExclusions(
@@ -581,6 +585,8 @@ interface GetWeekViewHourGridArgs extends GetDayViewHourGridArgs {
   viewStart: Date;
   viewEnd: Date;
   minimumEventHeight: number;
+  eventWidth?: number;
+  isDayView?: boolean;
 }
 
 function getWeekViewHourGrid(
@@ -599,6 +605,8 @@ function getWeekViewHourGrid(
     viewStart,
     viewEnd,
     minimumEventHeight,
+    eventWidth = 0,
+    isDayView = false,
   }: GetWeekViewHourGridArgs
 ): WeekViewHourColumn[] {
   const dayViewHourGrid = getDayViewHourGrid(dateAdapter, {
@@ -678,8 +686,10 @@ function getWeekViewHourGrid(
           event.top + event.height
         )
       );
-
-      const width = 100 / columnCount;
+      let width = 100 / columnCount;
+      if (isDayView) {
+        width = eventWidth;
+      }
       return { ...event, left: event.left * width, width };
     });
 
@@ -725,6 +735,8 @@ export function getWeekView(
     minimumEventHeight,
     viewStart = dateAdapter.startOfWeek(viewDate, { weekStartsOn }),
     viewEnd = dateAdapter.endOfWeek(viewDate, { weekStartsOn }),
+    eventWidth = 0,
+    isDayView = false,
   }: GetWeekViewArgs
 ): WeekView {
   if (!events) {
@@ -776,6 +788,8 @@ export function getWeekView(
       viewStart,
       viewEnd,
       minimumEventHeight,
+      eventWidth,
+      isDayView,
     }),
   };
 }
