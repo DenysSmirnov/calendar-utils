@@ -14,9 +14,9 @@ const DEFAULT_WEEKEND_DAYS: number[] = [
   DAYS_OF_WEEK.SUNDAY,
   DAYS_OF_WEEK.SATURDAY,
 ];
-const DAYS_IN_WEEK: number = 7;
-const HOURS_IN_DAY: number = 24;
-const MINUTES_IN_HOUR: number = 60;
+const DAYS_IN_WEEK = 7;
+const HOURS_IN_DAY = 24;
+const MINUTES_IN_HOUR = 60;
 export const SECONDS_IN_DAY: number = 60 * 60 * 24;
 
 export interface WeekDay {
@@ -32,6 +32,7 @@ export interface WeekDay {
 export interface EventColor {
   primary: string;
   secondary: string;
+  secondaryText?: string;
 }
 
 export interface EventAction {
@@ -162,7 +163,7 @@ function getExcludedSeconds(
   const endDate: Date = addSeconds(startDate, seconds - 1);
   const dayStart: number = getDay(startDate);
   const dayEnd: number = getDay(endDate);
-  let result: number = 0; // Calculated in seconds
+  let result = 0; // Calculated in seconds
   let current: Date = startDate;
 
   while (current < endDate) {
@@ -295,7 +296,7 @@ function getWeekViewEventOffset(
     return 0;
   }
 
-  let offset: number = 0;
+  let offset = 0;
 
   switch (precision) {
     case 'days':
@@ -829,7 +830,6 @@ export function getMonthView(
     endOfDay,
     isSameMonth,
     getDay,
-    getMonth,
   } = dateAdapter;
   const start: Date = startOfWeek(viewStart, { weekStartsOn });
   const end: Date = endOfWeek(viewEnd, { weekStartsOn });
@@ -840,7 +840,7 @@ export function getMonthView(
   });
   const initialViewDays: MonthViewDay[] = [];
   let previousDate: Date;
-  for (let i: number = 0; i < differenceInDays(end, start) + 1; i++) {
+  for (let i = 0; i < differenceInDays(end, start) + 1; i++) {
     // hacky fix for https://github.com/mattlewis92/angular-calendar/issues/173
     let date: Date;
     if (previousDate) {
@@ -875,11 +875,7 @@ export function getMonthView(
   let days: MonthViewDay[] = [];
   const totalDaysVisibleInWeek: number = DAYS_IN_WEEK - excluded.length;
   if (totalDaysVisibleInWeek < DAYS_IN_WEEK) {
-    for (
-      let i: number = 0;
-      i < initialViewDays.length;
-      i += totalDaysVisibleInWeek
-    ) {
+    for (let i = 0; i < initialViewDays.length; i += totalDaysVisibleInWeek) {
       const row: MonthViewDay[] = initialViewDays.slice(
         i,
         i + totalDaysVisibleInWeek
@@ -897,7 +893,7 @@ export function getMonthView(
 
   const rows: number = Math.floor(days.length / totalDaysVisibleInWeek);
   const rowOffsets: number[] = [];
-  for (let i: number = 0; i < rows; i++) {
+  for (let i = 0; i < rows; i++) {
     rowOffsets.push(i * totalDaysVisibleInWeek);
   }
 
@@ -1004,20 +1000,22 @@ function getDayView(
       const hourHeightModifier: number =
         (hourSegments * segmentHeight) / (hourDuration || MINUTES_IN_HOUR);
 
-      let top: number = 0;
+      let top = 0;
       if (eventStart > startOfView) {
         // adjust the difference in minutes if the user's offset is different between the start of the day and the event (e.g. when going to or from DST)
-        const eventOffset = eventStart.getTimezoneOffset();
-        const startOffset = startOfView.getTimezoneOffset();
+        const eventOffset = dateAdapter.getTimezoneOffset(eventStart);
+        const startOffset = dateAdapter.getTimezoneOffset(startOfView);
         const diff = startOffset - eventOffset;
         top += differenceInMinutes(eventStart, startOfView) + diff;
       }
       top *= hourHeightModifier;
+      top = Math.floor(top);
 
       const startDate: Date = startsBeforeDay ? startOfView : eventStart;
       const endDate: Date = endsAfterDay ? endOfView : eventEnd;
       const timezoneOffset =
-        startDate.getTimezoneOffset() - endDate.getTimezoneOffset();
+        dateAdapter.getTimezoneOffset(startDate) -
+        dateAdapter.getTimezoneOffset(endDate);
       let height: number =
         differenceInMinutes(endDate, startDate) + timezoneOffset;
 
@@ -1031,6 +1029,8 @@ function getDayView(
         height = minimumEventHeight;
       }
 
+      height = Math.floor(height);
+
       const bottom: number = top + height;
 
       const overlappingPreviousEvents = getOverLappingWeekViewEvents(
@@ -1039,7 +1039,7 @@ function getDayView(
         bottom
       );
 
-      let left: number = 0;
+      let left = 0;
 
       while (
         overlappingPreviousEvents.some(
@@ -1123,7 +1123,6 @@ function getDayViewHourGrid(
     startOfMinute,
     endOfDay,
     addMinutes,
-    addHours,
     addDays,
   } = dateAdapter;
   const hours: WeekViewHour[] = [];
@@ -1143,7 +1142,10 @@ function getDayViewHourGrid(
   let dateAdjustment: (d: Date) => Date = (d: Date) => d;
 
   // this means that we change from or to DST on this day and that's going to cause problems so we bump the date
-  if (startOfViewDay.getTimezoneOffset() !== endOfViewDay.getTimezoneOffset()) {
+  if (
+    dateAdapter.getTimezoneOffset(startOfViewDay) !==
+    dateAdapter.getTimezoneOffset(endOfViewDay)
+  ) {
     startOfViewDay = addDays(startOfViewDay, 1);
     startOfView = addDays(startOfView, 1);
     endOfView = addDays(endOfView, 1);
@@ -1154,9 +1156,9 @@ function getDayViewHourGrid(
     ? (HOURS_IN_DAY * 60) / hourDuration
     : MINUTES_IN_HOUR;
 
-  for (let i: number = 0; i < dayDuration; i++) {
+  for (let i = 0; i < dayDuration; i++) {
     const segments: WeekViewHourSegment[] = [];
-    for (let j: number = 0; j < hourSegments; j++) {
+    for (let j = 0; j < hourSegments; j++) {
       const date: Date = addMinutes(
         addMinutes(startOfView, i * (hourDuration || MINUTES_IN_HOUR)),
         j * segmentDuration
@@ -1189,7 +1191,7 @@ export function validateEvents(
   events: CalendarEvent[],
   log: (...args: any[]) => void
 ): boolean {
-  let isValid: boolean = true;
+  let isValid = true;
 
   function isError(msg: string, event: CalendarEvent): void {
     log(msg, event);

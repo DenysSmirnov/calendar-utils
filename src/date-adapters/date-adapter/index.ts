@@ -40,7 +40,7 @@ export interface DateAdapter {
 
   isSameSecond(dateLeft: Date | number, dateRight: Date | number): boolean;
 
-  max(dates: Array<Date | number>): Date; // tslint:disable-line array-type
+  max(dates: Array<Date | number>): Date;
 
   setHours(date: Date | number, hours: number): Date;
 
@@ -62,4 +62,6 @@ export interface DateAdapter {
       weekStartsOn?: number;
     }
   ): Date;
+
+  getTimezoneOffset(date: Date | number): number;
 }
